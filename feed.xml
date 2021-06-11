@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" xml:lang="ru_RU"><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" hreflang="ru_RU" /><updated>2021-06-11T12:01:43+00:00</updated><id>/feed.xml</id><title type="html">b00bl1k’s blog</title><subtitle>My personal blog</subtitle><author><name>b00bl1k</name></author><entry><title type="html">Тестирование загрузки изображений с помощью pytest-django</title><link href="/2021/04/20/Test-image-uploading-with-pytest-django.html" rel="alternate" type="text/html" title="Тестирование загрузки изображений с помощью pytest-django" /><published>2021-04-20T00:00:00+00:00</published><updated>2021-04-20T00:00:00+00:00</updated><id>/2021/04/20/Test-image-uploading-with-pytest-django</id><content type="html" xml:base="/2021/04/20/Test-image-uploading-with-pytest-django.html">&lt;p&gt;Для начала напишем фикстуру, которая создаёт изображение для загрузки:&lt;/p&gt;
+
+&lt;div class=&quot;language-py highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;o&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pytest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fixture&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;scope&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;session&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;image_file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tmpdir_factory&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;img&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PilImage&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;RGB&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;640&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;480&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;fn&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tmpdir_factory&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mktemp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;data&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;join&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;img.jpg&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;img&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;save&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fn&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Я использую &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;PIL&lt;/code&gt; для создания подходящего изображения.&lt;/p&gt;
+
+&lt;p&gt;Далее приведён код, который тестирует загрузку изображения методом POST:&lt;/p&gt;
+
+&lt;div class=&quot;language-py highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;test_upload_image&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;image_file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tmpdir&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;MEDIA_ROOT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tmpdir&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;with&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;image_file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;rb&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;response&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;post&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;url&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;image&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;})&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;assert&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;status_code&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;200&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Перед загрузкой файла изменяется значение &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MEDIA_ROOT&lt;/code&gt; на временный каталог. Здесь использована стандартная pytest фикстура &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;tmpdir&lt;/code&gt; и фикстура &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;settings&lt;/code&gt; из модуля &lt;a href=&quot;https://github.com/pytest-dev/pytest-django&quot;&gt;pytest-django&lt;/a&gt;.&lt;/p&gt;</content><author><name>b00bl1k</name></author><summary type="html">Для начала напишем фикстуру, которая создаёт изображение для загрузки:</summary></entry><entry><title type="html">Датчик температуры LoRaWAN</title><link href="/2020/09/30/Lora-node-151.html" rel="alternate" type="text/html" title="Датчик температуры LoRaWAN" /><published>2020-09-30T00:00:00+00:00</published><updated>2020-09-30T00:00:00+00:00</updated><id>/2020/09/30/Lora-node-151</id><content type="html" xml:base="/2020/09/30/Lora-node-151.html">&lt;p&gt;За основу взят готовый модуль Heltec &lt;a href=&quot;https://heltec.org/project/lora-node-151/&quot;&gt;LoRa Node 151&lt;/a&gt;.
+Плата содержит микроконтроллер с низким потреблением STM32L151 и радио чип SX1276.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/lora-node-temperature.png&quot; alt=&quot;Тепловая карта в Grafana&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;В качестве LoRaWAN библиотеки использован проект &lt;a href=&quot;https://github.com/Lora-net/LoRaMac-node&quot;&gt;LoRaMAC-node&lt;/a&gt;. 
+Так же был написан модуль для работы с шиной 1-wire через uart и модуль для работы с датчиком DS18B20.&lt;/p&gt;
+
+&lt;p&gt;Из особенностей можно отметить, что на плате имеется транзисторный ключ &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Vext control&lt;/code&gt; для управления 
+питанием внешних устройств. Чем собственно и была запитана шина 1-wire.&lt;/p&gt;
+
+&lt;p&gt;Микроконтроллер позволяет измерить опорное напряжение АЦП, а поскольку он запитывается почти напрямую с батареи,
+то это позволяет оценить заряд батареи (на самом деле нет, т.к. график заряда Li-SOCl2 весьма нелинеен).&lt;/p&gt;
+
+&lt;p&gt;Измеренное значение температуры модуль передаёт в виде сообщения без подтверждения, а упаковывает данные
+в формате &lt;a href=&quot;https://developers.mydevices.com/cayenne/docs/lora/#lora-cayenne-low-power-payload&quot;&gt;LPP Cayenne&lt;/a&gt;.
+Получается всего 4 байта, например: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;00 67 00 aa&lt;/code&gt;, где:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;0x00 - Channel&lt;/li&gt;
+  &lt;li&gt;0x67 - Temperature Sensor&lt;/li&gt;
+  &lt;li&gt;0x00 0xaa - Data&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Выбор такого формата обсуловлен тем, что многие сервера поддерживают его декодинг “из коробки”.&lt;/p&gt;
+
+&lt;p&gt;Данные о напряжении батареи запрашивает сам LoRaWAN сервер. Для этого он с некоторой периодичностью отправляет 
+команду &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DevStatusReq&lt;/code&gt; (см. &lt;a href=&quot;https://lora-alliance.org/sites/default/files/2018-07/lorawan1.0.3.pdf&quot;&gt;LoRaWAN™ 1.0.3 Specification&lt;/a&gt;), а
+в ответ прибор отправляет &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DevStatusAns&lt;/code&gt; с полями &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Battery&lt;/code&gt; и &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Margin&lt;/code&gt;. Причем отправляется не напряжение 
+батареи, а уровень заряда от 1 до 254.&lt;/p&gt;
+
+&lt;p&gt;Т.к. на приёмной стороне предпологалось использовать дешевый одноканальный (или двух) шлюз, то ADR был выключен
+и список частот ограничен базовыми 868.9 и 869.1. Скорость передачи - DR0 (SF12 BW125).&lt;/p&gt;
+
+&lt;p&gt;Серверная часть - ChirpStack, с настроенной http и influxdb интеграцией. По http декодированные данные принимает 
+python-скрипт и отправляет данные в сервис &lt;a href=&quot;https://narodmon.ru/&quot;&gt;narodmon.ru&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Декодированный payload выглядит так:&lt;/p&gt;
+
+&lt;div class=&quot;language-json highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+  &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;data&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;AGcAfQ==&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+  &lt;/span&gt;&lt;span class=&quot;nl&quot;&gt;&quot;objectJSON&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;{&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;temperatureSensor\\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;:{&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;\\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;:12.5}}&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Данные из influxdb удобно просматривать с помощью Grafana и плагина heatmap (результат на КДПВ).&lt;/p&gt;</content><author><name>b00bl1k</name></author><summary type="html">За основу взят готовый модуль Heltec LoRa Node 151. Плата содержит микроконтроллер с низким потреблением STM32L151 и радио чип SX1276.</summary></entry><entry><title type="html">Генеалогии пост</title><link href="/2020/04/04/Genealogy.html" rel="alternate" type="text/html" title="Генеалогии пост" /><published>2020-04-04T00:00:00+00:00</published><updated>2020-04-04T00:00:00+00:00</updated><id>/2020/04/04/Genealogy</id><content type="html" xml:base="/2020/04/04/Genealogy.html">&lt;p&gt;&lt;img src=&quot;/assets/20190916-gaio.jpg&quot; alt=&quot;Ивановский областной архив&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Выписки из метрических книг ГАИО &lt;a href=&quot;https://docs.google.com/spreadsheets/d/1595p6Iqf2sxvcBfa9eCaSRd7_H9C3RZqL0DH5dyffiM/edit?usp=sharing&quot;&gt;в виде таблицы&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Проект по поиску захоронений &lt;a href=&quot;https://pogost.org&quot;&gt;pogost.org&lt;/a&gt;&lt;/p&gt;</content><author><name>b00bl1k</name></author><summary type="html"></summary></entry></feed>
